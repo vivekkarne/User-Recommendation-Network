@@ -1,0 +1,80 @@
+1) Name: Vivek Vardhan Reddy Karne
+
+2) USC ID : 8721410634
+   NET ID : karne
+
+3) I have built a user recommendation system using the client-server model. In this model, we can have n number of clients talking to a main server via TCP, asking it to
+recommend friends for a particular user(userId) from a country. The main server gets the country of the user and the user id, then it checks using vectors (pre-populated
+using UDP) if it can route this query to one of its backend servers that hold this country using UDP. The backend servers then run the recommendation algorithm based
+on the interest groups which the user is present in. Each country in the backend servers will have its own set of interest groups and the users in these interest groups
+in which the queried user also exists are considered as the friends of the user and sent back to the main server. The main server then identifies the client which sent this
+query in the first place and sends back the result to the client. I've implemented the following client, main server and backend server code to execute the entire flow as 
+described above.
+
+4)
+servermain.cpp - Main server application which contains both TCP and UDP socket. The TCP socket is used to communicate with the client and the UDP socket is used to 
+communicate with the backend servers. After both the sockets are bound it gets the resulting country list from the backend servers (via. UDP) and stores them in a list. 
+When a new client is accepted and query is received, it first checks if the country is present in one of the backend servers or not. If not, it will directly send a reply
+to the clients saying that country is not found. If the country exists in one of the backend servers, it will forward the received query to the appropriate backend server
+using UDP. Then it takes the reply received from the backend server and sends it to the client which had initially queried.  
+
+serverA.cpp - Contains code to read and store country, interest groups and related userIds. Initially sends list of countries to the main server, and then starts listening
+for queries from the main server. Once there is a query it constructs the reply message and sends it to the main server via UDP protocol.
+
+serverA.cpp - Similar to serverA but reads from a different data file.
+
+client.cpp - Contains code to establish a TCP connection with the main server. It is used to send the user(ie. client) entered query and get the friend recommendations for a
+particular user in a particular country. After sending the request, it waits for the appropriate reply from the main server and then prints out the reply.
+
+5)
+
+Messages related to client:
+
+Sent Messages
+<country> <userId> - user entered query params to find the friends of <userId> in <country>
+
+Received Messages
+<country>: Not found - received when the main server cant find the queried country
+<userId>: Not found - received when the main server cant find the queried userId
+User <recommendUserIds>.. - received when there are some results retured by main server
+None - received from main server when the user has no recommended friends in the country
+
+Messages related to servermain :
+
+Sent messages:
+send country names - to initially get the country list from backend servers.
+<country>: Not found - sent to client when none of the backend servers have a country
+<country> <userId> - sent to appropriate backend server
+User <recommendUserIds>.. - sent to client when there are some results retured by backend server
+None - sent to client when the user has no recommended friends in the country
+
+Received messages:
+<country names list> - initially gets the country names list as string
+<country> <userId> - user entered query params to find the friends of <userId> in <country> from client
+<userId>: Not found - from backend server if userId doesnt exist in that country 
+User <recommendUserIds>.. - from backend server when user has friends
+None - from backend server when the user doesnt have any recommended friends in the country
+
+Messages related to serverA/serverB:
+
+Sent messages:
+<country names list> - initially sends the country names list as string
+<userId>: Not found - to main server if userId doesnt exist in that country 
+User <recommendUserIds>.. - to main server when user has friends
+None - to main server when the user doesnt have any recommended friends in the country
+
+Received messages:
+send country names - sent by main serverf to initially get the country list from backend servers
+<country> <userId> - sent by main server to perform the recommendation task
+
+
+UDP datagrams have checksum along with data.
+
+6) Idiosyncrasy N/a
+
+7) Adapted code
+   Beej's guide to network programming
+   6.1 A Simple Stream Server - for servermain
+   6.2 A Simple Stream Client - for client
+   Beej's guide to network programming
+   6.3 Datagram Sockets - Open socket and bind to port code
